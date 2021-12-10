@@ -1,5 +1,4 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const fs = require("fs");
 const { stdout } = require("process");
 const io = require("socket.io")(3000, {
@@ -11,21 +10,12 @@ const io = require("socket.io")(3000, {
 const app = express();
 const PORT = 80;
 
-// app.use(bodyParser.json());
-// app.use(bodyParser.urlencoded({extended: true}));
 app.use("/static", express.static("static"));
 
 app.set("view engine", "ejs");
 
 const MSGFILENAME = "data/messages.json";
-/*
-[
-    {
-        alias: "John Doe",
-        message: "amogus"
-    }
-]
-*/
+
 var messages = [];
 
 function addMessage(alias, message) {
