@@ -14,18 +14,29 @@ app.use("/static", express.static("static"));
 
 app.set("view engine", "ejs");
 
-const MSGFILENAME = "data/messages.json";
+const MSGFILENAME = "./data/messages.json";
+const DATADIR = "./data";
 
 var messages = [];
 
 function addMessage(alias, message) {
     let to_send = JSON.stringify({alias, message}) + "\n"
 
-    try {
-        fs.appendFileSync(MSGFILENAME, to_send)
-    } catch(err) {
-        fs.writeFileSync(MSGFILENAME, to_send)
-    }
+    fs.access(DATADIR, err => {
+        if (err) {
+            fs.mkdir("./data", err => {
+                if (err) {
+                    console.log(err)
+                }
+            });
+        }
+
+        fs.appendFile(MSGFILENAME, to_send, err => {
+            if (err) {
+                fs.writeFileSync(MSGFILENAME, to_send);
+            }
+        });
+    })
 }
 
 function loadMessages() {
@@ -36,7 +47,7 @@ function loadMessages() {
             }
         })
     } catch(err) {
-        stdout.write("Can't load messages\n")
+        stdout.write(`Ignore this error if '${MSGFILENAME}' is missing`)
         stdout.write(String(err) + "\n")
     }
 }

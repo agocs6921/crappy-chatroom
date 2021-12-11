@@ -13,7 +13,12 @@
 </head>
 <body>
     <h1 class="p-3">Hello world!</h1>
-    <input id="alias-changer" type="text">
+    <div class="position-fixed" style="right: 10px; top: 5px;">
+        <label for="alias">
+            Your alias is 
+            <input name="alias" id="alias-changer" type="text" placeholder="Alias">
+        </label>
+    </div>
     <div id="messages" class="p-3 m-auto" style="width: 95%; height: 75vh;">
         <% messages.forEach(message => { %>
             <p><b><%= message.alias %></b> : <%= message.message %></p>
@@ -21,45 +26,18 @@
     </div>
     <div id="my-message" class="fixed-bottom vw-100 p-2">
         <div class="d-flex h-100">
-            <textarea class="h-100 d-block" name="message" id="message-content"></textarea>
-            <button class="btn text-white border-2 border-white h-100 d-block" id="send-message">Send</button>
+            <textarea placeholder="Message" class="h-100 d-block" name="message" id="message-content"></textarea>
+            <!-- <button class="btn text-white border-2 border-white h-100 d-block" id="send-message">Send</button> -->
         </div>
     </div>
     <script>
         const socket = io(location.hostname + ":3000");
-
-        const sendButton = document.querySelector("#send-message");
-
-        sendButton.addEventListener("click", () => {
-            let msg = document.querySelector("#message-content").value;
-    
-            if (msg) {
-                socket.emit("message", localStorage.alias, msg);
-                makeMessage(localStorage.alias, msg);
-
-                document.querySelector("#message-content").value = "";
-            }
-        })
-
+        const messageContentElement = document.querySelector("#message-content");
         const aliasChanger = document.querySelector("#alias-changer")
-
-        if (!localStorage.getItem("alias")) {
-            localStorage.setItem("alias", "Default Alias")
-        }
-
-        aliasChanger.addEventListener("change", () => {
-            if (aliasChanger.value) {
-                localStorage.setItem("alias", aliasChanger.value);
-            }
-        })
-
         const messages = document.querySelector("#messages");
-        messages.scrollTo(0, messages.scrollHeight);
+        // const sendButton = document.querySelector("#send-message");
 
         function makeMessage(alias, message) {
-            //messages.scrollTop =
-            messages.scrollTo(0, messages.scrollHeight);
-
             let msg = document.createElement("div");
             msg.classList.add("message");
             messages.appendChild(msg);
@@ -74,10 +52,43 @@
             let messageElement = document.createElement("span");
             messageElement.textContent = " : " + message;
             textContainer.appendChild(messageElement);
+
+            messages.scrollTo(0, messages.scrollHeight);
         }
+        
+        function send() {
+            let msg = messageContentElement.value;
+            
+            if (msg) {
+                socket.emit("message", localStorage.alias, msg);
+                makeMessage(localStorage.alias, msg);
+                
+                document.querySelector("#message-content").value = "";
+            }
+        }
+        
+        messageContentElement.addEventListener("keydown", e => {
+            if (e.key == "Enter") {
+                e.preventDefault();
+                send();
+            }
+        })
+        
+        // sendButton.addEventListener("click", send);
+
+        aliasChanger.addEventListener("change", () => {
+            if (aliasChanger.value) {
+                localStorage.setItem("alias", aliasChanger.value);
+            }
+        })
 
         socket.on("message-received", makeMessage);
-
+        
+        messages.scrollTo(0, messages.scrollHeight);
+        
+        if (!localStorage.getItem("alias")) {
+        localStorage.setItem("alias", "Default Alias")
+        }
         aliasChanger.value = localStorage.getItem("alias");
     </script>
 </body>
