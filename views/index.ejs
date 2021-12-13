@@ -16,21 +16,25 @@
     <div class="position-fixed" style="right: 10px; top: 5px;">
         <label for="alias">
             Your alias is 
-            <input name="alias" id="alias-changer" type="text" placeholder="Alias">
+            <input name="alias" id="alias-changer" type="text" maxlength="32" placeholder="Alias">
         </label>
     </div>
     <div id="messages" class="p-3 m-auto" style="width: 95%; height: 75vh;">
         <% messages.forEach(message => { %>
-            <p><b><%= message.alias %></b> : <%= message.message %></p>
+            <div class="message">
+                <p><b><%= message.alias %></b><span> : <%= message.message %></span></p>
+            </div>
         <% }) %>
     </div>
     <div id="my-message" class="fixed-bottom vw-100 p-2">
         <div class="d-flex h-100">
-            <textarea placeholder="Message" class="h-100 d-block" name="message" id="message-content"></textarea>
+            <textarea placeholder="Message" class="h-100 d-block" name="message" id="message-content" maxlength="2000"></textarea>
             <!-- <button class="btn text-white border-2 border-white h-100 d-block" id="send-message">Send</button> -->
         </div>
     </div>
     <script>
+        const defaultAlias = "Default Alias";
+        const regex = /(^( |\t)+)|(( |\t)+$)/gm;
         const socket = io(location.hostname + ":3000");
         const messageContentElement = document.querySelector("#message-content");
         const aliasChanger = document.querySelector("#alias-changer")
@@ -58,10 +62,16 @@
         
         function send() {
             let msg = messageContentElement.value;
+            let alias = localStorage.alias == null || localStorage.alias.replace(regex, "") == "" ? defaultAlias : localStorage.alias;
+
+            msg = msg.substr(0, 2000);
+            alias = alias.substr(0, 32);
             
             if (msg) {
-                socket.emit("message", localStorage.alias, msg);
-                makeMessage(localStorage.alias, msg);
+                if (msg.replace(regex, "") != "") {
+                    socket.emit("message", alias, msg);
+                    makeMessage(alias, msg);
+                }
                 
                 document.querySelector("#message-content").value = "";
             }
@@ -77,7 +87,7 @@
         // sendButton.addEventListener("click", send);
 
         aliasChanger.addEventListener("change", () => {
-            if (aliasChanger.value) {
+            if (aliasChanger.value || aliasChanger.value.replace(regex, "") != "") {
                 localStorage.setItem("alias", aliasChanger.value);
             }
         })
@@ -86,8 +96,8 @@
         
         messages.scrollTo(0, messages.scrollHeight);
         
-        if (!localStorage.getItem("alias")) {
-        localStorage.setItem("alias", "Default Alias")
+        if (localStorage.getItem("alias") == null || localStorage.getItem("alias").replace(regex, "") == "") {
+            localStorage.setItem("alias", defaultAlias)
         }
         aliasChanger.value = localStorage.getItem("alias");
     </script>

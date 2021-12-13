@@ -18,6 +18,11 @@ const MSGFILENAME = "./data/messages.json";
 const DATADIR = "./data";
 
 var messages = [];
+var messaging = {};
+
+setInterval(() => {
+    messaging = {};
+}, 5000);
 
 function addMessage(alias, message) {
     let to_send = JSON.stringify({alias, message}) + "\n"
@@ -34,6 +39,7 @@ function addMessage(alias, message) {
         fs.appendFile(MSGFILENAME, to_send, err => {
             if (err) {
                 fs.writeFileSync(MSGFILENAME, to_send);
+                messages.push({alias, message});
             }
         });
     })
@@ -53,12 +59,29 @@ function loadMessages() {
 }
 
 io.on("connect", (socket) => {
-    stdout.write(`${socket.id} connected\n`)
+    const address = ((ip) => {
+        return ip.replace(/^:{2,}/g, "").split(":")[1]
+    })(socket.handshake.address);
+
+    stdout.write(`${address} connected as ${socket.id}\n`)
+
+    const regex = /(^( |\t)+)|(( |\t)+$)/gm;
 
     socket.on("message", (alias, message) => {
-        addMessage(alias, message);
+        if (message.replace(regex, "") == "" || alias == null || messaging[address] > 15) return;
+
+        filteredAlias = alias.replace(regex, "") == "" ? "Default Alias" : alias.substr(0, 32);
+        filteredMessage = message.substr(0, 2000);
+
+        addMessage(filteredAlias, filteredMessage);
     
-        socket.broadcast.emit("message-received", alias, message);
+        socket.broadcast.emit("message-received", filteredAlias, filteredMessage);
+
+        if (messaging[address]) {
+            messaging[address]++;
+        } else {
+            messaging[address] = 1;
+        }
     })
 })
 
